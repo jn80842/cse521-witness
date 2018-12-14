@@ -26,6 +26,9 @@ def z3_literal(var,polarity):
   else:
     return z3.Not(z3.Bool('x' + str(var)))
 
+def randomize_rounding(probabilities):
+  return [random.uniform(0,1) < p for p in probabilities]
+
 class ThreeCNF:
   def __init__(self,n,m):
     self.n = n
@@ -48,20 +51,6 @@ class ThreeCNF:
       tuple = [self.clauses[i] for i in indices]
       if is_ktuple_even(tuple) and is_ktuple_inconsistent(tuple):
         collection.append(indices)
-    return collection
-
-  # this is really just for testing
-  # and is also wrong i think
-  def find_all_four_tuples(self):
-    # list of indexes to clauses that form inconsistent even k-tuples
-    collection = []
-    for i in range(self.m):
-      for j in range(self.m):
-        for k in range(self.m):
-          for l in range(self.m):
-            tuple = [self.clauses[i],self.clauses[j],self.clauses[k],self.clauses[l]]
-            if is_ktuple_even(tuple) and is_ktuple_inconsistent(tuple):
-              collection.append([i,j,k])
     return collection
 
   def calculate_m_phi(self):
@@ -94,7 +83,7 @@ class ThreeCNF:
           negative_vars[k] += 1
     return sum([abs(positive_vars[i] - negative_vars[i]) for i in range(self.n)])
 
-  def build_lp(self,k,d):
+  def find_t(self,k,d):
     ktuples = self.find_all_k_tuples(k)
     T = len(ktuples)
     c = np.ones(T) * -1
@@ -107,6 +96,8 @@ class ThreeCNF:
           A_ub[clause_idx][t_idx] = 0
     b_ub = np.full(self.m,d)
     res = linprog(c,A_ub=A_ub,b_ub=b_ub,bounds=(0,1))
+    rounded_res = randomize_rounding(res.x)
+    return rounded_res.count(True)
 
   def check_sat(self):
     s = z3.Solver()
