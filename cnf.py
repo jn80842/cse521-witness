@@ -4,6 +4,7 @@ import numpy as np
 from numpy import linalg
 from scipy.optimize import linprog
 import z3
+from timeit import default_timer as timer
 
 def choose_random_polarity():
   return random.choice([True, False])
@@ -28,6 +29,11 @@ def z3_literal(var,polarity):
 
 def randomize_rounding(probabilities):
   return [random.uniform(0,1) < p for p in probabilities]
+
+def fast_benchmark_suite(n,m,iterations):
+  phi = ThreeCNF(n,m)
+  for i in range(iterations):
+    phi.fast_benchmark()
 
 class ThreeCNF:
   def __init__(self,n,m):
@@ -105,3 +111,20 @@ class ThreeCNF:
       clause_vars = list(clause.keys())
       s.add(z3.Or(z3_literal(clause_vars[0],clause[clause_vars[0]]),z3_literal(clause_vars[1],clause[clause_vars[1]]),z3_literal(clause_vars[2],clause[clause_vars[2]])))
     return s.check()
+
+  def fast_benchmark(self):
+    self.get_random_phi()
+    i_phi = self.find_imbalance()
+    m_phi = self.find_m_phi_eigenvalue()
+    is_sat = self.check_sat()
+    print(str(i_phi) + " " + str(m_phi) + " " + str(is_sat))
+
+if __name__ == '__main__':
+  #fast_benchmark_suite(10,500,100)
+  phi = ThreeCNF(10,100)
+  phi.get_random_phi()
+  start = timer()
+  t = phi.find_t(2,2)
+  print(t)
+  end = timer()
+  print(end - start)
